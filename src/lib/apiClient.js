@@ -1,5 +1,8 @@
 import axios from "axios";
-export const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8787/api";
+// export const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8787/api";
+export const API_URL = "https://repodna.onrender.com/api";
+
+console.log("API_URL =", API_URL);
 const TOKEN_KEY = "repodna_token";
 export function getToken() {
   return localStorage.getItem(TOKEN_KEY);
