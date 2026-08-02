@@ -13,6 +13,7 @@ function getTransporter() {
   return transporter;
 }
 
+
 // Sends a one-time code by email. If SMTP isn't configured, logs it to the
 // server console instead — handy for local development without mail setup.
 // Returns { emailed: boolean } so callers can decide whether to also surface
