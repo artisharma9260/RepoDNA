@@ -54,7 +54,7 @@ router.post("/chat", async (req, res) => {
     if (badRepoId(body.repoId)) return res.status(400).json({ error: "Bad repoId" });
 
     const { owner, name } = parseRepoId(body.repoId);
-    const ctx = await buildRepoContext(owner, name, body.githubToken, { maxTreeItems: 160 });
+    const ctx = await buildRepoContext(owner, name, body.githubToken || process.env.GITHUB_TOKEN, { maxTreeItems: 160 });
 
     const retrieved = await retrieveChunks(RepoChunk, { userId, repoId: body.repoId, query: body.question, limit: 6 });
 
@@ -162,7 +162,7 @@ router.post("/docs", async (req, res) => {
     const body = req.body || {};
     if (!body?.repoId || !body?.kind || !DOC_PROMPTS[body.kind]) return res.status(400).json({ error: "Bad body" });
     const { owner, name } = parseRepoId(body.repoId);
-    const ctx = await buildRepoContext(owner, name, body.githubToken, { maxTreeItems: 240 });
+    const ctx = await buildRepoContext(owner, name, body.githubToken || process.env.GITHUB_TOKEN, { maxTreeItems: 240 });
     const p = DOC_PROMPTS[body.kind];
 
     const system = `You are a documentation architect for the "${ctx.info.full_name}" repository. Ground every claim in the provided repository context. Never invent APIs. Prefer Markdown that renders cleanly on GitHub.`;
@@ -201,8 +201,8 @@ router.post("/review", async (req, res) => {
     const body = req.body || {};
     if (!body?.repoId || !body?.path) return res.status(400).json({ error: "Missing repoId or path" });
     const { owner, name } = parseRepoId(body.repoId);
-    const info = await getRepo(owner, name, body.githubToken);
-    const raw = await getFileRaw(owner, name, body.path, info.default_branch, body.githubToken);
+    const info = await getRepo(owner, name, body.githubToken || process.env.GITHUB_TOKEN);
+    const raw = await getFileRaw(owner, name, body.path, info.default_branch, body.githubToken || process.env.GITHUB_TOKEN);
     const clipped = raw.slice(0, 16000);
 
     const system = "You are a senior code reviewer. Produce actionable, specific feedback grounded in the code provided. Use markdown sections: Summary, Strengths, Issues (with line references), Refactor suggestions, Performance, Security, Tests to add. Be concise and honest.";
@@ -236,8 +236,8 @@ router.post("/tests", async (req, res) => {
     const body = req.body || {};
     if (!body?.repoId || !body?.path) return res.status(400).json({ error: "Missing repoId or path" });
     const { owner, name } = parseRepoId(body.repoId);
-    const info = await getRepo(owner, name, body.githubToken);
-    const raw = await getFileRaw(owner, name, body.path, info.default_branch, body.githubToken);
+    const info = await getRepo(owner, name, body.githubToken || process.env.GITHUB_TOKEN);
+    const raw = await getFileRaw(owner, name, body.path, info.default_branch, body.githubToken || process.env.GITHUB_TOKEN);
     const clipped = raw.slice(0, 14000);
     const fw = frameworkForPath(body.path);
 
@@ -262,7 +262,7 @@ router.post("/security", async (req, res) => {
     const body = req.body || {};
     if (!body?.repoId) return res.status(400).json({ error: "Missing repoId" });
     const { owner, name } = parseRepoId(body.repoId);
-    const ctx = await buildRepoContext(owner, name, body.githubToken, { maxTreeItems: 300 });
+    const ctx = await buildRepoContext(owner, name, body.githubToken || process.env.GITHUB_TOKEN, { maxTreeItems: 300 });
 
     const system = "You are a senior application security engineer. Analyze the repository shape and known signals for likely risks. Never invent CVE IDs. Always ground findings in files or patterns visible in the tree/README.";
     const user = `Return STRICT JSON with this shape:
@@ -307,7 +307,7 @@ router.post("/interview", async (req, res) => {
     const body = req.body || {};
     if (!body?.repoId || !body?.track) return res.status(400).json({ error: "Missing repoId or track" });
     const { owner, name } = parseRepoId(body.repoId);
-    const ctx = await buildRepoContext(owner, name, body.githubToken, { maxTreeItems: 180 });
+    const ctx = await buildRepoContext(owner, name, body.githubToken || process.env.GITHUB_TOKEN, { maxTreeItems: 180 });
 
     const system = "You are a principal engineer designing repository-specific interviews. Ground every question in the actual codebase. Provide graded rubrics with what a good answer contains.";
     const countHint =
@@ -356,7 +356,7 @@ router.post("/summary", async (req, res) => {
     const body = req.body || {};
     if (!body?.repoId) return res.status(400).json({ error: "Missing repoId" });
     const { owner, name } = parseRepoId(body.repoId);
-    const ctx = await buildRepoContext(owner, name, body.githubToken, { maxTreeItems: 220 });
+    const ctx = await buildRepoContext(owner, name, body.githubToken || process.env.GITHUB_TOKEN, { maxTreeItems: 220 });
 
     const system = "You are RepoDNA AI's staff architect. Produce a JSON architecture summary for the repository. Only cite folders/files actually visible in the tree.";
     const user = `Return STRICT JSON:
@@ -403,7 +403,7 @@ router.post("/roadmap", async (req, res) => {
     const body = req.body || {};
     if (!body?.repoId || !body?.level) return res.status(400).json({ error: "Missing repoId or level" });
     const { owner, name } = parseRepoId(body.repoId);
-    const ctx = await buildRepoContext(owner, name, body.githubToken, { maxTreeItems: 180 });
+    const ctx = await buildRepoContext(owner, name, body.githubToken || process.env.GITHUB_TOKEN, { maxTreeItems: 180 });
 
     const system = "You are a lead developer educator building a learning path for a specific repository. Cite real file paths from the provided tree.";
     const user = `Return STRICT JSON:
@@ -446,7 +446,7 @@ router.post("/debt", async (req, res) => {
     const body = req.body || {};
     if (!body?.repoId) return res.status(400).json({ error: "Missing repoId" });
     const { owner, name } = parseRepoId(body.repoId);
-    const ctx = await buildRepoContext(owner, name, body.githubToken, { maxTreeItems: 300 });
+    const ctx = await buildRepoContext(owner, name, body.githubToken || process.env.GITHUB_TOKEN, { maxTreeItems: 300 });
 
     const system = "You are a technical-debt analyst. Detect probable dead code, oversized files, missing tests, missing CI, missing docs, and duplicate patterns, grounded strictly in the visible tree.";
     const user = `Return STRICT JSON:
@@ -490,7 +490,7 @@ router.post("/ingest", async (req, res) => {
     const { owner, name } = parseRepoId(body.repoId);
     const maxFiles = Math.min(Math.max(body.maxFiles ?? 120, 20), 250);
 
-    const info = await getRepo(owner, name, body.githubToken);
+    const info = await getRepo(owner, name, body.githubToken || process.env.GITHUB_TOKEN);
 
     if (!body.force) {
       const existing = await RepoIngestion.findOne({ user_id: userId, repo_id: body.repoId });
@@ -516,7 +516,7 @@ router.post("/ingest", async (req, res) => {
 
     await RepoChunk.deleteMany({ user_id: userId, repo_id: body.repoId });
 
-    const tree = await getTree(owner, name, info.default_branch, body.githubToken);
+    const tree = await getTree(owner, name, info.default_branch, body.githubToken || process.env.GITHUB_TOKEN);
     const candidates = tree.tree
       .filter((t) => t.type === "blob" && shouldIndex(t.path, t.size))
       .sort((a, b) => scoreFile(b.path) - scoreFile(a.path))
@@ -531,7 +531,7 @@ router.post("/ingest", async (req, res) => {
     let batch = [];
     for (const f of candidates) {
       try {
-        const source = await getFileRaw(owner, name, f.path, info.default_branch, body.githubToken);
+        const source = await getFileRaw(owner, name, f.path, info.default_branch, body.githubToken || process.env.GITHUB_TOKEN);
         if (!source) continue;
         const chunks = chunkFile(f.path, source);
         for (const c of chunks) {
@@ -603,9 +603,9 @@ router.post("/health", async (req, res) => {
 
     const { owner, name } = parseRepoId(body.repoId);
     const [ctx, contributors, commits] = await Promise.all([
-      buildRepoContext(owner, name, body.githubToken, { maxTreeItems: 220 }),
-      getContributors(owner, name, body.githubToken).catch(() => []),
-      getCommits(owner, name, "HEAD", body.githubToken).catch(() => []),
+      buildRepoContext(owner, name, body.githubToken || process.env.GITHUB_TOKEN, { maxTreeItems: 220 }),
+      getContributors(owner, name, body.githubToken || process.env.GITHUB_TOKEN).catch(() => []),
+      getCommits(owner, name, "HEAD", body.githubToken || process.env.GITHUB_TOKEN ).catch(() => []),
     ]);
 
     const contributorSummary = contributors.slice(0, 10).map((c) => `${c.login}: ${c.contributions}`).join(", ");
@@ -686,9 +686,9 @@ router.post("/pr-review", async (req, res) => {
     const { owner, name } = parseRepoId(body.repoId);
 
     const [info, pr, files] = await Promise.all([
-      getRepo(owner, name, body.githubToken),
-      getPull(owner, name, body.pr, body.githubToken),
-      getPullFiles(owner, name, body.pr, body.githubToken),
+      getRepo(owner, name, body.githubToken || process.env.GITHUB_TOKEN),
+      getPull(owner, name, body.pr, body.githubToken || process.env.GITHUB_TOKEN),
+      getPullFiles(owner, name, body.pr, body.githubToken || process.env.GITHUB_TOKEN),
     ]);
 
     const fileSummaries = files.slice(0, 25).map((f) =>
