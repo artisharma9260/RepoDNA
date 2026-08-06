@@ -4,41 +4,17 @@ function extractError(e, fallback) {
   return new Error(message);
 }
 export const authService = {
-  async sendOtp(email) {
+  async signUp(name, email, password) {
     try {
-      const res = await apiClient.post("/auth/otp/send", {
-        email
-      });
-      return {
-        emailed: !!res.data?.emailed,
-        devCode: res.data?.devCode
-      };
-    } catch (e) {
-      throw extractError(e, "Could not send code");
-    }
-  },
-  async verifyOtp(email, token) {
-    try {
-      const res = await apiClient.post("/auth/otp/verify", {
+      const res = await apiClient.post("/auth/signup", {
+        name,
         email,
-        code: token
+        password
       });
       setToken(res.data.token);
       return res.data.user;
     } catch (e) {
-      throw extractError(e, "Verification failed");
-    }
-  },
-  async setPassword(password, username) {
-    try {
-      const res = await apiClient.post("/auth/password/set", {
-        password,
-        username
-      });
-      setToken(res.data.token);
-      return res.data.user;
-    } catch (e) {
-      throw extractError(e, "Could not set password");
+      throw extractError(e, "Could not create account");
     }
   },
   async signInWithPassword(email, password) {

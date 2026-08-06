@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { toast } from "sonner";
-import { ArrowRight, KeyRound, Mail } from "lucide-react";
+import { ArrowRight, KeyRound } from "lucide-react";
 import Logo from "@/components/branding/Logo";
 import { authService } from "@/lib/auth";
 import { useAuth } from "@/hooks/useAuth";
@@ -10,11 +10,8 @@ export default function Login() {
   const {
     setUser
   } = useAuth();
-  const [mode, setMode] = useState("password");
   const [email, setEmail] = useState("");
   const [pw, setPw] = useState("");
-  const [otp, setOtp] = useState("");
-  const [otpSent, setOtpSent] = useState(false);
   const [busy, setBusy] = useState(false);
   const passwordSubmit = async e => {
     e.preventDefault();
@@ -35,52 +32,6 @@ export default function Login() {
       setBusy(false);
     }
   };
-  const sendOtp = async () => {
-    if (!email) return toast.error("Enter your email first");
-    setBusy(true);
-    try {
-      const {
-        emailed,
-        devCode
-      } = await authService.sendOtp(email);
-      setOtpSent(true);
-      if (!emailed && devCode) {
-        setOtp(devCode);
-        toast.success("OTP ready (dev mode — no SMTP configured)", {
-          description: `Code auto-filled: ${devCode}`
-        });
-      } else {
-        toast.success("OTP sent", {
-          description: `Check ${email}`
-        });
-      }
-    } catch (err) {
-      toast.error("Could not send OTP", {
-        description: err.message
-      });
-    } finally {
-      setBusy(false);
-    }
-  };
-  const otpSubmit = async e => {
-    e.preventDefault();
-    if (!otp) return toast.error("Enter the OTP code");
-    setBusy(true);
-    try {
-      const user = await authService.verifyOtp(email, otp);
-      if (!user) throw new Error("Verification failed");
-      setUser(user);
-      toast.success("Signed in", {
-        description: email
-      });
-      nav("/app");
-    } catch (err) {
-      toast.error("Invalid code", {
-        description: err.message
-      });
-      setBusy(false);
-    }
-  };
   return <div className="grid min-h-screen lg:grid-cols-[1.05fr_1fr]">
       <div className="flex flex-col justify-between px-6 py-8 sm:px-14">
         <Logo />
@@ -90,15 +41,12 @@ export default function Login() {
           <p className="mt-2 text-foreground/70">Access your repositories, chat, and AI reports.</p>
 
           <div className="mt-6 flex rounded-full border border-border/70 bg-cream-deep/40 p-1 text-sm">
-            <button className={`flex-1 rounded-full px-3 py-1.5 transition ${mode === "password" ? "bg-charcoal text-cream" : "text-muted-foreground"}`} onClick={() => setMode("password")}>
+            <div className="flex-1 rounded-full bg-charcoal px-3 py-1.5 text-center text-cream">
               <KeyRound className="mr-1 inline h-3.5 w-3.5" /> Password
-            </button>
-            <button className={`flex-1 rounded-full px-3 py-1.5 transition ${mode === "otp" ? "bg-charcoal text-cream" : "text-muted-foreground"}`} onClick={() => setMode("otp")}>
-              <Mail className="mr-1 inline h-3.5 w-3.5" /> Email OTP
-            </button>
+            </div>
           </div>
 
-          {mode === "password" ? <form onSubmit={passwordSubmit} className="mt-6 space-y-3">
+          <form onSubmit={passwordSubmit} className="mt-6 space-y-3">
               <Field label="Email">
                 <input value={email} onChange={e => setEmail(e.target.value)} type="email" required className="input" placeholder="you@company.com" />
               </Field>
@@ -108,19 +56,7 @@ export default function Login() {
               <button className="btn-primary mt-3 w-full" disabled={busy}>
                 {busy ? "Signing in…" : "Sign in"} <ArrowRight className="h-4 w-4" />
               </button>
-            </form> : <form onSubmit={otpSubmit} className="mt-6 space-y-3">
-              <Field label="Email">
-                <input value={email} onChange={e => setEmail(e.target.value)} type="email" required className="input" placeholder="you@company.com" />
-              </Field>
-              {otpSent && <Field label="One-time code">
-                  <input value={otp} onChange={e => setOtp(e.target.value)} required className="input tracking-widest text-center font-mono" placeholder="0000" maxLength={8} />
-                </Field>}
-              {!otpSent ? <button type="button" className="btn-primary mt-3 w-full" onClick={sendOtp} disabled={busy}>
-                  {busy ? "Sending…" : "Send OTP"} <ArrowRight className="h-4 w-4" />
-                </button> : <button className="btn-primary mt-3 w-full" disabled={busy}>
-                  {busy ? "Verifying…" : "Verify & sign in"} <ArrowRight className="h-4 w-4" />
-                </button>}
-            </form>}
+            </form>
 
           <p className="mt-6 text-center text-sm text-foreground/70">
             New to RepoDNA?{" "}
